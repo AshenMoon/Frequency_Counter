@@ -8,10 +8,29 @@
   http://interface.khm.de/index.php/lab/interfaces-advanced/arduino-frequency-counter-library/	
  */
 
+/*
+  AshenMoon:
+  SSD1306 OLED Display
+  Automatic Gate Switching
+  https://github.com/AshenMoon/Frequency_Counter
+*/
+
+#include <FreqCounter.h> // https://github.com/BlackBrix/Arduino-Frequency-Counter-Library
+
 //The Frequency input is fixed to digital pin 5.
 
-#include <FreqCounter.h>
+// SSD1306 Display required libraries
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
 
+// The pins for I2C are defined by the Wire-library. 
+// On an arduino UNO and NANO: A4(SDA), A5(SCL)
+#define SCREEN_WIDTH 128  // OLED display width, in pixels
+#define SCREEN_HEIGHT 64  // OLED display height, in pixels
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+#define OLED_RESET 4  //OLED reset on pin 4
+#define DISPLAY_I2C_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 
 unsigned long frequency;
 int cnt;
@@ -23,9 +42,38 @@ void setup() {
   Serial.begin(115200);  // connect to the serial port
 
   Serial.println("Frequency Counter");
+
+    if (!display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_I2C_ADDRESS)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;)
+      ;
+  }
+  //delay(2000);
+  display.clearDisplay();
+  display.setTextColor(WHITE);
 }
 
-int gate = 100;  // 100 ms Gate Time
+int gate = 100;  // Default 100 ms Gate Time
+
+void displayFrequency() {
+  // Update SSD1306 Display
+  display.clearDisplay();
+  display.setTextSize(2);        //set text sizez
+  display.setTextColor(WHITE);   //set text color
+  display.setCursor(0, 0);       //set cursor
+
+  display.println("Frequency");
+
+  display.setTextSize(3);        //set text sizez
+  display.print(frequency);
+
+  display.display();
+}
+
+void updateGate() {
+  // Set Gate according to the signal frequency
+  gate = frequency > 999 ? 100 : 1000;
+}
 
 void loop() {
 
@@ -40,14 +88,12 @@ void loop() {
 
   frequency = FreqCounter::f_freq * factor;
 
-  Serial.print(cnt++);
-  Serial.print("  Freq: ");
+  // Serial.print(cnt++);
+  Serial.print("Freq: ");
   Serial.println(frequency);
 
-  if(frequency > 999)
-    gate = 100;
-  else
-    gate = 1000;
+  displayFrequency();
+  updateGate();
   
   delay(20);
   digitalWrite(pinLed, !digitalRead(pinLed));  // blink Led
