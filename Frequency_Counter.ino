@@ -15,7 +15,7 @@
   https://github.com/AshenMoon/Frequency_Counter
 */
 
-#include <FreqCounter.h> // https://github.com/BlackBrix/Arduino-Frequency-Counter-Library
+#include <FreqCounter.h>  // https://github.com/BlackBrix/Arduino-Frequency-Counter-Library
 
 //The Frequency input is fixed to digital pin 5.
 
@@ -24,16 +24,16 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-// The pins for I2C are defined by the Wire-library. 
+// The pins for I2C are defined by the Wire-library.
 // On an arduino UNO and NANO: A4(SDA), A5(SCL)
 #define SCREEN_WIDTH 128  // OLED display width, in pixels
 #define SCREEN_HEIGHT 64  // OLED display height, in pixels
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
-#define OLED_RESET 4  //OLED reset on pin 4
-#define DISPLAY_I2C_ADDRESS 0x3C ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
+#define OLED_RESET 4              //OLED reset on pin 4
+#define DISPLAY_I2C_ADDRESS 0x3C  ///< See datasheet for Address; 0x3D for 128x64, 0x3C for 128x32
 
 unsigned long frequency;
-int cnt;
+
 int pinLed = 13;
 
 void setup() {
@@ -43,7 +43,7 @@ void setup() {
 
   Serial.println("Frequency Counter");
 
-    if (!display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_I2C_ADDRESS)) {
+  if (!display.begin(SSD1306_SWITCHCAPVCC, DISPLAY_I2C_ADDRESS)) {
     Serial.println(F("SSD1306 allocation failed"));
     for (;;)
       ;
@@ -58,14 +58,34 @@ int gate = 100;  // Default 100 ms Gate Time
 void displayFrequency() {
   // Update SSD1306 Display
   display.clearDisplay();
-  display.setTextSize(2);        //set text sizez
-  display.setTextColor(WHITE);   //set text color
-  display.setCursor(0, 0);       //set cursor
+  display.setTextSize(2);       //set text sizez
+  display.setTextColor(WHITE);  //set text color
+  display.setCursor(0, 0);      //set cursor
 
-  display.println("Frequency");
+  display.println(" Frequency");
 
-  display.setTextSize(3);        //set text sizez
-  display.print(frequency);
+  display.setTextSize(3);  //set text sizez
+  if (frequency < 1000) {
+    if (frequency < 100)
+      display.print(' ');
+    if (frequency < 10)
+      display.print(' ');
+    display.print("    ");
+    display.println(frequency);
+    display.print("     Hz");
+  } else {
+    if (frequency < 1000000)
+      display.print(' ');
+    if (frequency < 100000)
+      display.print(' ');
+    if (frequency < 10000)
+      display.print(' ');
+    display.print(frequency / 1000);
+    display.print('.');
+    display.print(((frequency / 100) % 10));
+    display.println(((frequency / 10) % 10));
+    display.print("    kHz");
+  }
 
   display.display();
 }
@@ -82,19 +102,19 @@ void loop() {
 
   FreqCounter::start(gate);
 
-  while (FreqCounter::f_ready == 0);
+  while (FreqCounter::f_ready == 0)
+    ;
 
   unsigned int factor = 1000 / gate;
 
   frequency = FreqCounter::f_freq * factor;
 
-  // Serial.print(cnt++);
   Serial.print("Freq: ");
   Serial.println(frequency);
 
   displayFrequency();
   updateGate();
-  
+
   delay(20);
   digitalWrite(pinLed, !digitalRead(pinLed));  // blink Led
 }
